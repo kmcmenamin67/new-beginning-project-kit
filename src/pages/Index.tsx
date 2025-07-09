@@ -39,9 +39,20 @@ const Index = () => {
       // Request microphone permission
       await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // Start the conversation with your agent ID
+      // Extract URL parameters for dynamic variables
+      const urlParams = new URLSearchParams(window.location.search);
+      const firstName = urlParams.get('first_name') || '';
+      const customer = urlParams.get('customer') || '';
+      
+      // Start the conversation with your agent ID and dynamic variables
       const id = await conversation.startSession({
-        agentId: 'agent_01jz6hxv22f0trgk6jxsnwetq2'
+        agentId: 'agent_01jz6hxv22f0trgk6jxsnwetq2',
+        ...(firstName || customer ? {
+          variables: {
+            ...(firstName && { 'first_name': firstName }),
+            ...(customer && { 'customer': customer })
+          }
+        } : {})
       });
       
       setConversationId(id);
