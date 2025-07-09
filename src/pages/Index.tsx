@@ -41,7 +41,7 @@ const Index = () => {
       
       // Extract URL parameters for dynamic variables
       const urlParams = new URLSearchParams(window.location.search);
-      const firstName = 'Tester001'; // Hardcoded for testing
+      const firstName = urlParams.get('first_name') || '';
       const customer = urlParams.get('customer') || '';
       
       // Start the conversation with your agent ID and dynamic variables
