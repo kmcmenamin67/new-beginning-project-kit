@@ -47,12 +47,10 @@ const Index = () => {
       // Start the conversation with your agent ID and dynamic variables
       const id = await conversation.startSession({
         agentId: 'agent_01jz6hxv22f0trgk6jxsnwetq2',
-        ...(firstName || customer ? {
-          variables: {
-            ...(firstName && { 'first_name': firstName }),
-            ...(customer && { 'customer': customer })
-          }
-        } : {})
+        dynamicVariables: {
+          first_name: firstName,
+          ...(customer && { customer: customer })
+        }
       });
       
       setConversationId(id);
