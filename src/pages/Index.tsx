@@ -1,22 +1,66 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useConversation } from '@elevenlabs/react';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Calendar } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [conversationActive, setConversationActive] = useState(false);
+  const { toast } = useToast();
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  
+  const conversation = useConversation({
+    onConnect: () => {
+      toast({
+        title: "Connected",
+        description: "Voice agent is now connected and ready.",
+      });
+    },
+    onDisconnect: () => {
+      toast({
+        title: "Disconnected", 
+        description: "Voice agent has been disconnected.",
+      });
+      setConversationId(null);
+    },
+    onMessage: (message) => {
+      console.log('Message received:', message);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Voice agent error: ${error}`,
+        variant: "destructive",
+      });
+    }
+  });
 
-  const handleStartConversation = () => {
-    setConversationActive(true);
-    setIsConnected(true);
-    setIsListening(true);
+  const handleStartConversation = async () => {
+    try {
+      // Request microphone permission
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Start the conversation with your agent ID
+      const id = await conversation.startSession({
+        agentId: 'agent_01jz6hxv22f0trgk6jxsnwetq2'
+      });
+      
+      setConversationId(id);
+    } catch (error) {
+      toast({
+        title: "Permission Error",
+        description: "Microphone access is required for voice conversation.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleStopConversation = () => {
-    setConversationActive(false);
-    setIsConnected(false);
-    setIsListening(false);
+  const handleStopConversation = async () => {
+    try {
+      await conversation.endSession();
+      setConversationId(null);
+    } catch (error) {
+      console.error('Error stopping conversation:', error);
+    }
   };
 
   const handleScheduleFollowUp = () => {
@@ -34,7 +78,7 @@ const Index = () => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button 
             onClick={handleStartConversation}
-            disabled={conversationActive}
+            disabled={conversation.status === 'connected'}
             className="px-6 py-2"
           >
             <Mic className="w-4 h-4 mr-2" />
@@ -44,7 +88,7 @@ const Index = () => {
           <Button 
             variant="secondary"
             onClick={handleStopConversation}
-            disabled={!conversationActive}
+            disabled={conversation.status !== 'connected'}
             className="px-6 py-2"
           >
             <MicOff className="w-4 h-4 mr-2" />
@@ -63,13 +107,18 @@ const Index = () => {
 
         <div className="space-y-2 text-sm text-muted-foreground">
           <p>
-            Status: <span className={isConnected ? "text-green-600" : "text-red-500"}>
-              {isConnected ? "connected" : "disconnected"}
+            Status: <span className={conversation.status === 'connected' ? "text-green-600" : "text-red-500"}>
+              {conversation.status === 'connected' ? "connected" : "disconnected"}
             </span>
           </p>
           <p>
-            Agent is {isListening ? "listening" : "idle"}
+            Agent is {conversation.isSpeaking ? "speaking" : conversation.status === 'connected' ? "listening" : "idle"}
           </p>
+          {conversationId && (
+            <p className="text-xs">
+              Session ID: {conversationId.slice(0, 8)}...
+            </p>
+          )}
         </div>
       </div>
     </div>
